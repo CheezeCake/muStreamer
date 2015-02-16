@@ -1,0 +1,7 @@
+*.mp3
+Player/
+Client.*
+*.o
+*.swp
+MetaServer
+MusicServer
