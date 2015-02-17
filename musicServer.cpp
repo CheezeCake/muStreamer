@@ -40,7 +40,6 @@ MusicServer::~MusicServer()
 
 void MusicServer::add(const Player::Song& s, const Ice::Current& c)
 {
-	/* std::cout << dynamic_cast<Ice::IPConnectionInfo*>(c.con->getInfo().get())->remoteAddress << '\n'; */
 	std::cout << "Adding to db: " << s.artist << " - " << s.title << " - " << s.path << '\n';
 	db.emplace(s.path, s);
 }
@@ -66,6 +65,7 @@ Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 
 Player::StreamToken MusicServer::setupStreaming(const std::string& path, const std::string& clientIP, const std::string& clientPort, const Ice::Current& c)
 {
+	std::cout << "setup stream " << path << '\n';
 	Player::StreamToken token;
 	std::string::size_type pos = path.find_last_of("/");
 	std::string file(path, (pos == std::string::npos) ? 0 : pos);
@@ -85,11 +85,13 @@ Player::StreamToken MusicServer::setupStreaming(const std::string& path, const s
 
 void MusicServer::play(const Player::StreamToken& token, const Ice::Current& c)
 {
+	std::cout << "Play " << token.streamingURL << '\n';
 	libvlc_vlm_play_media(vlc, token.libvlcMediaName.c_str());
 }
 
 void MusicServer::stop(const Player::StreamToken& token, const Ice::Current& c)
 {
+	std::cout << "Stop " << token.streamingURL << '\n';
 	libvlc_vlm_stop_media(vlc, token.libvlcMediaName.c_str());
 }
 
