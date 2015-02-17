@@ -3,5 +3,7 @@ Player/
 Client.*
 *.o
 *.swp
-MetaServer
-MusicServer
+metaServer
+musicServer
+server.cpp
+server.h
