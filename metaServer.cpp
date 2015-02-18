@@ -26,7 +26,7 @@ class MetaServer : public Player::IMetaServer
 
 MetaServer::MetaServer()
 {
-	serverList.push_back(std::make_pair("onchevps.ddns.net", "10001"));
+	serverList.push_back(std::make_pair("onche.ovh", "10001"));
 }
 
 void MetaServer::add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c)
