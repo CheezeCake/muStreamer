@@ -1,5 +1,6 @@
 #include <iostream>
 #include <regex>
+#include <ctime>
 #include <Ice/Ice.h>
 #include <vlc/libvlc.h>
 #include <vlc/vlc.h>
@@ -65,12 +66,12 @@ Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 
 Player::StreamToken MusicServer::setupStreaming(const std::string& path, const std::string& clientIP, const std::string& clientPort, const Ice::Current& c)
 {
-	std::cout << "setup stream " << path << '\n';
+	std::cout << "Setup stream " << path << '\n';
 	Player::StreamToken token;
 	std::string::size_type pos = path.find_last_of("/");
 	std::string file(path, (pos == std::string::npos) ? 0 : pos);
 	std::string cleanClientIP = std::regex_replace(clientIP, std::regex(":"), "");
-	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + file;
+	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + '_' + std::to_string(time(nullptr)) + file;
 
 	std::string sout = "#transcode{acodec=mp3,ab=128,channels=2,"
 		"samplerate=44100}:http{dst=:8090/" + mediaName + ".mp3}";
