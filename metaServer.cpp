@@ -21,12 +21,12 @@ class MetaServer : public Player::IMetaServer
 
 	private:
 		/* std::map<std::string, Player::IMusicServerPrx> serverList; */
-		std::vector<std::pair<std::string, std::string>> serverList;
+		std::map<std::string, std::string> serverList;
 };
 
 MetaServer::MetaServer()
 {
-	serverList.push_back(std::make_pair("onche.ovh", "10001"));
+	serverList.emplace("MusicServer:default -h onche.ovh -p 10001", "onche.ovh");
 }
 
 void MetaServer::add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c)
@@ -53,15 +53,14 @@ Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& 
 	Player::MediaInfoSeq medias;
 
 	for (const auto& it : serverList) {
-		std::string endpointStr = "MusicServer:default -h " + it.first + " -p " + it.second;
-		Ice::ObjectPrx base = ic->stringToProxy(endpointStr);
+		Ice::ObjectPrx base = ic->stringToProxy(it.first);
 		Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 
 		if (srv) {
 			auto results = srv->find(s);
 			for (const auto& r : results) {
 				Player::MediaInfo m;
-				m.endpointStr = endpointStr;
+				m.endpointStr = it.first;
 				m.media = r;
 				medias.push_back(m);
 			}
@@ -72,6 +71,7 @@ Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& 
 
 Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, const Ice::Current& c)
 {
+	std::cout << "Setup stream on " << media.endpointStr << ", " << media.media.path << '\n';
 	Player::StreamToken token;
 	Ice::ObjectPrx base = ic->stringToProxy(media.endpointStr);
 	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
@@ -80,7 +80,14 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 		Ice::IPConnectionInfo* ipConInfo = dynamic_cast<Ice::IPConnectionInfo*>(c.con->getInfo().get());
 		token = srv->setupStreaming(media.media.path, ipConInfo->remoteAddress, std::to_string(ipConInfo->remotePort));
 		token.endpointStr = media.endpointStr;
+		try {
+			token.streamingURL = "http://" + serverList.at(media.endpointStr) + ":8090" + '/' + token.streamingURL; // prepend http://hostname:8090
+		}
+		catch (const std::exception& e) {
+			return Player::StreamToken();
+		}
 	}
+
 	return token;
 }
 
