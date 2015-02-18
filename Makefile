@@ -53,7 +53,7 @@ slicedefjava: server.ice
 runsrv:
 	./server
 
-runjavaclient:
+runjavaclient: client
 	$(JAVA) -classpath $(CLASSPATH) Client
 
 
