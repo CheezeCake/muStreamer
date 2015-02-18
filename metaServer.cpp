@@ -31,10 +31,8 @@ MetaServer::MetaServer()
 
 void MetaServer::add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c)
 {
-	std::cout << "Adding to db: " << s.artist << " - " << s.title << " - " << s.path << '\n';
-	/* std::string endpointStr = "MusicServer:default -h " + it.first + " -p " + it.second; */
-	/* Ice::ObjectPrx base = ic->stringToProxy(endpointStr); */
-	Ice::ObjectPrx base = ic->stringToProxy("MusicServer:default -h onchevps.ddns.net -p 10001");
+	std::cout << "Adding to " << endpointStr << " : " << s.artist << " - " << s.title << " - " << s.path << '\n';
+	Ice::ObjectPrx base = ic->stringToProxy(endpointStr);
 	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 	if (srv)
 		srv->add(s);
@@ -42,9 +40,8 @@ void MetaServer::add(const std::string& endpointStr, const Player::Song& s, cons
 
 void MetaServer::remove(const Player::MediaInfo& media, const Ice::Current& c)
 {
-	std::cout << "Removing: " << media.media.path << '\n';
-	/* Ice::ObjectPrx base = ic->stringToProxy(media.endpointStr); */
-	Ice::ObjectPrx base = ic->stringToProxy("MusicServer:default -h onchevps.ddns.net -p 10001");
+	std::cout << "Removing on " << media.endpointStr << " : " << media.media.path << '\n';
+	Ice::ObjectPrx base = ic->stringToProxy(media.endpointStr);
 	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 	if (srv)
 		srv->remove(media.media.path);
