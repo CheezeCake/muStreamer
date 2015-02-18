@@ -71,7 +71,7 @@ Player::StreamToken MusicServer::setupStreaming(const std::string& path, const s
 	std::string::size_type pos = path.find_last_of("/");
 	std::string file(path, (pos == std::string::npos) ? 0 : pos);
 	std::string cleanClientIP = std::regex_replace(clientIP, std::regex(":"), "");
-	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + '_' + std::to_string(time(nullptr)) + file;
+	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + std::to_string(time(nullptr)) + file;
 
 	std::string sout = "#transcode{acodec=mp3,ab=128,channels=2,"
 		"samplerate=44100}:http{dst=:8090/" + mediaName + ".mp3}";
