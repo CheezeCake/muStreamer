@@ -64,7 +64,7 @@ Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 		std::transform(artist.begin(), artist.end(), artist.begin(), tolower);
 		std::transform(title.begin(), title.end(), title.begin(), tolower);
 
-		if (str.find(artist) != std::string::npos || str.find(title) != std::string::npos)
+		if (artist.find(str) != std::string::npos || title.find(str) != std::string::npos)
 			songs.push_back(it.second);
 	}
 
