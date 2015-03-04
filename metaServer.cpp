@@ -3,9 +3,6 @@
 #include <Ice/Ice.h>
 #include "server.h"
 
-// TODO: remove this global variable
-Ice::CommunicatorPtr ic;
-
 class MetaServer : public Player::IMetaServer
 {
 	public:
@@ -19,7 +16,11 @@ class MetaServer : public Player::IMetaServer
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c);
 		virtual void stop(const Player::StreamToken& token, const Ice::Current& c);
 
+		void setCommunicator(const Ice::CommunicatorPtr ic) { this->ic = ic; }
+
 	private:
+		Ice::CommunicatorPtr ic = nullptr;
+
 		/* std::map<std::string, Player::IMusicServerPrx> serverList; */
 		std::map<std::string, std::string> serverList;
 };
@@ -111,12 +112,15 @@ void MetaServer::stop(const Player::StreamToken& token, const Ice::Current& c)
 
 int main(int argc, char **argv)
 {
+	Ice::CommunicatorPtr ic;
 	int status = 0;
 
 	try {
 		ic = Ice::initialize(argc, argv);
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MetaServerAdapter", "default -p 10000");
-		Ice::ObjectPtr object = new MetaServer;
+		MetaServer* srv = new MetaServer;
+		srv->setCommunicator(ic);
+		Ice::ObjectPtr object = srv;
 		adapter->add(object, ic->stringToIdentity("MetaServer"));
 		adapter->activate();
 		ic->waitForShutdown();
