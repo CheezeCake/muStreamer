@@ -55,9 +55,16 @@ Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 {
 	std::cout << "Searching for: " << s << '\n';
 	Player::SongSeq songs;
+	std::string str(s);
+	std::transform(str.begin(), str.end(), str.begin(), tolower);
 
 	for (const auto& it : db) {
-		if (s == it.second.artist || s == it.second.title)
+		std::string artist(it.second.artist);
+		std::string title(it.second.title);
+		std::transform(artist.begin(), artist.end(), artist.begin(), tolower);
+		std::transform(title.begin(), title.end(), title.begin(), tolower);
+
+		if (str.find(artist) != std::string::npos || str.find(title) != std::string::npos)
 			songs.push_back(it.second);
 	}
 
