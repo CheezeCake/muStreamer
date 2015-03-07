@@ -9,12 +9,18 @@
 class MusicServer : public Player::IMusicServer
 {
 	public:
+		enum FindBy { Artist, Title, Everything };
+
 		MusicServer();
 		~MusicServer();
 
 		virtual void add(const Player::Song& s, const Ice::Current& c);
 		virtual void remove(const std::string& path, const Ice::Current& c);
 		virtual Player::SongSeq find(const std::string& s, const Ice::Current& c);
+		Player::SongSeq find(const std::string& s, const FindBy fb);
+		virtual Player::SongSeq findByArtist(const std::string& s, const Ice::Current& c);
+		virtual Player::SongSeq findByTitle(const std::string& s, const Ice::Current& c);
+		virtual Player::SongSeq listSongs(const Ice::Current& c);
 
 		virtual Player::StreamToken setupStreaming(const std::string& path, const std::string& ip, const std::string& port, const Ice::Current& c);
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c);
@@ -54,6 +60,23 @@ void MusicServer::remove(const std::string& path, const Ice::Current& c)
 Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 {
 	std::cout << "Searching for: " << s << '\n';
+	return find(s, FindBy::Everything);
+}
+
+Player::SongSeq MusicServer::findByArtist(const std::string& s, const Ice::Current& c)
+{
+	std::cout << "Searching for artist: " << s << '\n';
+	return find(s, FindBy::Artist);
+}
+
+Player::SongSeq MusicServer::findByTitle(const std::string& s, const Ice::Current& c)
+{
+	std::cout << "Searching for title: " << s << '\n';
+	return find(s, FindBy::Title);
+}
+
+Player::SongSeq MusicServer::find(const std::string& s, const FindBy fb)
+{
 	Player::SongSeq songs;
 	std::string str(s);
 	std::transform(str.begin(), str.end(), str.begin(), tolower);
@@ -64,9 +87,20 @@ Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
 		std::transform(artist.begin(), artist.end(), artist.begin(), tolower);
 		std::transform(title.begin(), title.end(), title.begin(), tolower);
 
-		if (artist.find(str) != std::string::npos || title.find(str) != std::string::npos)
+		if ((fb == FindBy::Everything && (artist.find(str) != std::string::npos || title.find(str) != std::string::npos))
+				|| (fb == FindBy::Artist && artist.find(str) != std::string::npos)
+				|| (fb == FindBy::Title && title.find(str) != std::string::npos))
 			songs.push_back(it.second);
 	}
+
+	return songs;
+}
+
+Player::SongSeq MusicServer::listSongs(const Ice::Current& c)
+{
+	Player::SongSeq songs(db.size());
+	for (const auto& it : db)
+		songs.push_back(it.second);
 
 	return songs;
 }

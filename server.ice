@@ -33,6 +33,9 @@ module Player
 		void add(Song s) throws Error;
 		void remove(string path) throws Error;
 		SongSeq find(string s);
+		SongSeq findByArtist(string s);
+		SongSeq findByTitle(string s);
+		SongSeq listSongs();
 
 		StreamToken setupStreaming(string path, string clientIP, string clientPort);
 		void play(StreamToken token);
@@ -44,6 +47,9 @@ module Player
 		void add(string endpointStr, Song s);
 		void remove(MediaInfo media);
 		MediaInfoSeq find(string s);
+		MediaInfoSeq findByArtist(string s);
+		MediaInfoSeq findByTitle(string s);
+		MediaInfoSeq listSongs();
 
 		StreamToken setupStreaming(MediaInfo media);
 		void play(StreamToken token);

@@ -6,11 +6,17 @@
 class MetaServer : public Player::IMetaServer
 {
 	public:
+		enum FindBy { Artist, Title, Everything };
+
 		MetaServer();
 
 		virtual void add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c);
 		virtual void remove(const Player::MediaInfo& media, const Ice::Current& c);
 		virtual Player::MediaInfoSeq find(const std::string& s, const Ice::Current& c);
+		Player::MediaInfoSeq find(const std::string& s, const MetaServer::FindBy sb);
+		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c);
+		virtual Player::MediaInfoSeq findByTitle(const std::string& s, const Ice::Current& c);
+		virtual Player::MediaInfoSeq listSongs(const Ice::Current& c);
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c);
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c);
@@ -51,6 +57,23 @@ void MetaServer::remove(const Player::MediaInfo& media, const Ice::Current& c)
 Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& c)
 {
 	std::cout << "Searching for: " << s << '\n';
+	return find(s, FindBy::Everything);
+}
+
+Player::MediaInfoSeq MetaServer::findByArtist(const std::string& s, const Ice::Current& c)
+{
+	std::cout << "Searching for artist: " << s << '\n';
+	return find(s, FindBy::Artist);
+}
+
+Player::MediaInfoSeq MetaServer::findByTitle(const std::string& s, const Ice::Current& c)
+{
+	std::cout << "Searching for title: " << s << '\n';
+	return find(s, FindBy::Title);
+}
+
+Player::MediaInfoSeq MetaServer::find(const std::string& s, const FindBy fb)
+{
 	Player::MediaInfoSeq medias;
 
 	for (const auto& it : serverList) {
@@ -58,7 +81,15 @@ Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& 
 		Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 
 		if (srv) {
-			auto results = srv->find(s);
+			Player::SongSeq results;
+
+			if (fb == FindBy::Artist)
+				results = srv->findByArtist(s);
+			else if (fb == FindBy::Title)
+				results = srv->findByTitle(s);
+			else
+				results = srv->find(s);
+
 			for (const auto& r : results) {
 				Player::MediaInfo m;
 				m.endpointStr = it.first;
@@ -67,6 +98,30 @@ Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& 
 			}
 		}
 	}
+
+	return medias;
+}
+
+Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
+{
+	Player::MediaInfoSeq medias;
+
+	for (const auto& it : serverList) {
+		Ice::ObjectPrx base = ic->stringToProxy(it.first);
+		Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
+
+		if (srv) {
+			Player::SongSeq results = srv->listSongs();
+
+			for (const auto& r : results) {
+				Player::MediaInfo m;
+				m.endpointStr = it.first;
+				m.media = r;
+				medias.push_back(m);
+			}
+		}
+	}
+
 	return medias;
 }
 
@@ -94,6 +149,7 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 
 void MetaServer::play(const Player::StreamToken& token, const Ice::Current& c)
 {
+	std::cout << "play\n";
 	Ice::ObjectPrx base = ic->stringToProxy(token.endpointStr);
 	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 
@@ -103,6 +159,7 @@ void MetaServer::play(const Player::StreamToken& token, const Ice::Current& c)
 
 void MetaServer::stop(const Player::StreamToken& token, const Ice::Current& c)
 {
+	std::cout << "stop\n";
 	Ice::ObjectPrx base = ic->stringToProxy(token.endpointStr);
 	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
 
