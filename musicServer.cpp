@@ -141,10 +141,23 @@ int main(int argc, char **argv)
 {
 	int status = 0;
 	Ice::CommunicatorPtr ic;
+	std::string port("10001");
+
+	if (argc > 1) {
+		try {
+			std::stoul(argv[1]);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Invalid port number: " << argv[1] << '\n';
+			return 1;
+		}
+
+		port = argv[1];
+	}
 
 	try {
 		ic = Ice::initialize(argc, argv);
-		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p 10001");
+		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
 		Ice::ObjectPtr object = new MusicServer;
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();

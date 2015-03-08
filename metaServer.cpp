@@ -171,10 +171,23 @@ int main(int argc, char **argv)
 {
 	Ice::CommunicatorPtr ic;
 	int status = 0;
+	std::string port("10000");
+
+	if (argc > 1) {
+		try {
+			std::stoul(argv[1]);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Invalid port number: " << argv[1] << '\n';
+			return 1;
+		}
+
+		port = argv[1];
+	}
 
 	try {
 		ic = Ice::initialize(argc, argv);
-		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MetaServerAdapter", "default -p 10000");
+		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MetaServerAdapter", "default -p " + port);
 		MetaServer* srv = new MetaServer;
 		srv->setCommunicator(ic);
 		Ice::ObjectPtr object = srv;
