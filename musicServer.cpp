@@ -98,7 +98,9 @@ Player::SongSeq MusicServer::find(const std::string& s, const FindBy fb)
 
 Player::SongSeq MusicServer::listSongs(const Ice::Current& c)
 {
-	Player::SongSeq songs(db.size());
+	Player::SongSeq songs;
+	songs.reserve(db.size());
+
 	for (const auto& it : db)
 		songs.push_back(it.second);
 
