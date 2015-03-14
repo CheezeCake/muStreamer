@@ -10,17 +10,17 @@ class MetaServer : public Player::IMetaServer
 
 		MetaServer();
 
-		virtual void add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c);
-		virtual void remove(const Player::MediaInfo& media, const Ice::Current& c);
-		virtual Player::MediaInfoSeq find(const std::string& s, const Ice::Current& c);
+		virtual void add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c) override;
+		virtual void remove(const Player::MediaInfo& media, const Ice::Current& c) override;
+		virtual Player::MediaInfoSeq find(const std::string& s, const Ice::Current& c) override;
 		Player::MediaInfoSeq find(const std::string& s, const MetaServer::FindBy sb);
-		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c);
-		virtual Player::MediaInfoSeq findByTitle(const std::string& s, const Ice::Current& c);
-		virtual Player::MediaInfoSeq listSongs(const Ice::Current& c);
+		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c) override;
+		virtual Player::MediaInfoSeq findByTitle(const std::string& s, const Ice::Current& c) override;
+		virtual Player::MediaInfoSeq listSongs(const Ice::Current& c) override;
 
-		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c);
-		virtual void play(const Player::StreamToken& token, const Ice::Current& c);
-		virtual void stop(const Player::StreamToken& token, const Ice::Current& c);
+		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
+		virtual void play(const Player::StreamToken& token, const Ice::Current& c) override;
+		virtual void stop(const Player::StreamToken& token, const Ice::Current& c) override;
 
 		void setCommunicator(const Ice::CommunicatorPtr ic) { this->ic = ic; }
 
