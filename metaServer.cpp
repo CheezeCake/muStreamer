@@ -17,6 +17,7 @@ class MetaServer : public Player::IMetaServer
 		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c) override;
 		virtual Player::MediaInfoSeq findByTitle(const std::string& s, const Ice::Current& c) override;
 		virtual Player::MediaInfoSeq listSongs(const Ice::Current& c) override;
+		virtual Player::stringMap listMusicServers(const Ice::Current& c) override;
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c) override;
@@ -123,6 +124,11 @@ Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
 	}
 
 	return medias;
+}
+
+Player::stringMap MetaServer::listMusicServers(const Ice::Current& c)
+{
+	return serverList;
 }
 
 Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, const Ice::Current& c)

@@ -20,6 +20,7 @@ module Player
 
 	sequence<MediaInfo> MediaInfoSeq;
 	sequence<Song> SongSeq;
+	dictionary<string, string> stringMap;
 
 	struct StreamToken
 	{
@@ -50,6 +51,7 @@ module Player
 		MediaInfoSeq findByArtist(string s);
 		MediaInfoSeq findByTitle(string s);
 		MediaInfoSeq listSongs();
+		stringMap listMusicServers();
 
 		StreamToken setupStreaming(MediaInfo media);
 		void play(StreamToken token);
