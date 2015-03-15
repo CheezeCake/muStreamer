@@ -11,7 +11,7 @@ class MusicServer : public Player::IMusicServer
 	public:
 		enum FindBy { Artist, Title, Everything };
 
-		MusicServer();
+		MusicServer(const std::string& port);
 		~MusicServer();
 
 		virtual void add(const Player::Song& s, const Ice::Current& c) override;
@@ -27,13 +27,14 @@ class MusicServer : public Player::IMusicServer
 		virtual void stop(const Player::StreamToken& token, const Ice::Current& c) override;
 
 	private:
+		std::string streamingPort;
 		std::map<std::string, Player::Song> db;
 		libvlc_instance_t* vlc;
 
 };
 
 
-MusicServer::MusicServer()
+MusicServer::MusicServer(const std::string& port) : streamingPort(port)
 {
 	vlc = libvlc_new(0, nullptr);
 	if (!vlc)
@@ -117,7 +118,7 @@ Player::StreamToken MusicServer::setupStreaming(const std::string& path, const s
 	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + std::to_string(time(nullptr)) + file;
 
 	std::string sout = "#transcode{acodec=mp3,ab=128,channels=2,"
-		"samplerate=44100}:http{dst=:8090/" + mediaName + ".mp3}";
+		"samplerate=44100}:http{dst=:"+ streamingPort + "/" + mediaName + ".mp3}";
 
 	if (libvlc_vlm_add_broadcast(vlc, mediaName.c_str(), path.c_str(), sout.c_str(), 0, nullptr, true, false) == 0) {
 		token.libvlcMediaName = mediaName;
@@ -139,28 +140,46 @@ void MusicServer::stop(const Player::StreamToken& token, const Ice::Current& c)
 	libvlc_vlm_stop_media(vlc, token.libvlcMediaName.c_str());
 }
 
+void setPort(std::string& port, const char* arg)
+{
+	try {
+		std::stoul(arg);
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Invalid port number: " << arg << '\n';
+		exit(1);
+	}
+
+	port = arg;
+}
+
 int main(int argc, char **argv)
 {
 	int status = 0;
 	Ice::CommunicatorPtr ic;
 	std::string port("10001");
+	std::string streamPort("8090");
+	int opt;
 
-	if (argc > 1) {
-		try {
-			std::stoul(argv[1]);
+	while ((opt = getopt(argc, argv, "p:s:")) != -1) {
+		if (opt == 'p') {
+			setPort(port, optarg);
 		}
-		catch (const std::exception& e) {
-			std::cerr << "Invalid port number: " << argv[1] << '\n';
+		else if (opt == 's') {
+			setPort(streamPort, optarg);
+		}
+		else {
+			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-d streamingPort]\n";
 			return 1;
 		}
-
-		port = argv[1];
 	}
+
+	std::cout << port << '-' << streamPort << '\n';
 
 	try {
 		ic = Ice::initialize(argc, argv);
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
-		Ice::ObjectPtr object = new MusicServer;
+		Ice::ObjectPtr object = new MusicServer(streamPort);
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();
 		ic->waitForShutdown();
