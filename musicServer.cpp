@@ -174,8 +174,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	std::cout << port << '-' << streamPort << '\n';
-
 	try {
 		ic = Ice::initialize(argc, argv);
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);

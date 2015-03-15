@@ -10,8 +10,6 @@ class MetaServer : public Player::IMetaServer
 
 		MetaServer();
 
-		virtual void add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c) override;
-		virtual void remove(const Player::MediaInfo& media, const Ice::Current& c) override;
 		virtual Player::MediaInfoSeq find(const std::string& s, const Ice::Current& c) override;
 		Player::MediaInfoSeq find(const std::string& s, const MetaServer::FindBy sb);
 		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c) override;
@@ -29,30 +27,12 @@ class MetaServer : public Player::IMetaServer
 		Ice::CommunicatorPtr ic = nullptr;
 
 		/* std::map<std::string, Player::IMusicServerPrx> serverList; */
-		std::map<std::string, std::string> serverList;
+		std::map<std::string, std::pair<std::string, std::string>> serverList;
 };
 
 MetaServer::MetaServer()
 {
-	serverList.emplace("MusicServer:default -h onche.ovh -p 10001", "onche.ovh");
-}
-
-void MetaServer::add(const std::string& endpointStr, const Player::Song& s, const Ice::Current& c)
-{
-	std::cout << "Adding to " << endpointStr << " : " << s.artist << " - " << s.title << " - " << s.path << '\n';
-	Ice::ObjectPrx base = ic->stringToProxy(endpointStr);
-	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
-	if (srv)
-		srv->add(s);
-}
-
-void MetaServer::remove(const Player::MediaInfo& media, const Ice::Current& c)
-{
-	std::cout << "Removing on " << media.endpointStr << " : " << media.media.path << '\n';
-	Ice::ObjectPrx base = ic->stringToProxy(media.endpointStr);
-	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
-	if (srv)
-		srv->remove(media.media.path);
+	serverList.emplace("MusicServer:default -h onche.ovh -p 10001", std::make_pair("onche.ovh", "10001"));
 }
 
 Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& c)
@@ -128,7 +108,11 @@ Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
 
 Player::stringMap MetaServer::listMusicServers(const Ice::Current& c)
 {
-	return serverList;
+	std::map<std::string, std::string> musicServers;
+	for (const auto& it : serverList)
+		musicServers.emplace(it.second.first + ':' + it.second.second, it.first);
+
+	return musicServers;
 }
 
 Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, const Ice::Current& c)
@@ -143,7 +127,7 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 		token = srv->setupStreaming(media.media.path, ipConInfo->remoteAddress, std::to_string(ipConInfo->remotePort));
 		token.endpointStr = media.endpointStr;
 		try {
-			token.streamingURL = "http://" + serverList.at(media.endpointStr) + ":8090" + '/' + token.streamingURL; // prepend http://hostname:8090
+			token.streamingURL = "http://" + serverList.at(media.endpointStr).first + ":8090" + '/' + token.streamingURL; // prepend http://hostname:8090
 		}
 		catch (const std::exception& e) {
 			return Player::StreamToken();

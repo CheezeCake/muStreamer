@@ -45,8 +45,6 @@ module Player
 
 	interface IMetaServer
 	{
-		void add(string endpointStr, Song s);
-		void remove(MediaInfo media);
 		MediaInfoSeq find(string s);
 		MediaInfoSeq findByArtist(string s);
 		MediaInfoSeq findByTitle(string s);
