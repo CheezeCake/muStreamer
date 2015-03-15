@@ -135,7 +135,7 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 		try {
 			const Player::MusicServerInfo musicSrv = serverList.at(media.endpointStr);
 			const std::string urlPort = musicSrv.hostname + ':' + std::to_string(musicSrv.streamingPort);
-			token.streamingURL = "http://" + urlPort + '/' + token.streamingURL; // prepend http://hostname:8090
+			token.streamingURL = "http://" + urlPort + '/' + token.streamingURL; // prepend http://hostname:streamingPort
 		}
 		catch (const std::exception& e) {
 			return Player::StreamToken();

@@ -49,7 +49,8 @@ MusicServer::~MusicServer()
 void MusicServer::add(const Player::Song& s, const Ice::Current& c)
 {
 	std::cout << "Adding to db: " << s.artist << " - " << s.title << " - " << s.path << '\n';
-	db.emplace(s.path, s);
+	if (!db.emplace(s.path, s).second)
+		throw Player::Error("Another song has the same path");
 }
 
 void MusicServer::remove(const std::string& path, const Ice::Current& c)
