@@ -15,7 +15,7 @@ class MetaServer : public Player::IMetaServer
 		virtual Player::MediaInfoSeq findByArtist(const std::string& s, const Ice::Current& c) override;
 		virtual Player::MediaInfoSeq findByTitle(const std::string& s, const Ice::Current& c) override;
 		virtual Player::MediaInfoSeq listSongs(const Ice::Current& c) override;
-		virtual Player::stringMap listMusicServers(const Ice::Current& c) override;
+		virtual Player::MusicServerInfoSeq listMusicServers(const Ice::Current& c) override;
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c) override;
@@ -27,12 +27,16 @@ class MetaServer : public Player::IMetaServer
 		Ice::CommunicatorPtr ic = nullptr;
 
 		/* std::map<std::string, Player::IMusicServerPrx> serverList; */
-		std::map<std::string, std::pair<std::string, std::string>> serverList;
+		/* std::map<std::string, std::pair<std::string, std::string>> serverList; */
+		std::map<std::string, Player::MusicServerInfo> serverList;
 };
 
 MetaServer::MetaServer()
 {
-	serverList.emplace("MusicServer:default -h onche.ovh -p 10001", std::make_pair("onche.ovh", "10001"));
+	const std::string endpointStr("MusicServer:default -h onche.ovh -p 10001");
+	Player::MusicServerInfo musicSrv = { endpointStr, "onche.ovh", 10001, 8090 };
+
+	serverList.insert(std::make_pair(endpointStr, musicSrv));
 }
 
 Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& c)
@@ -106,11 +110,13 @@ Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
 	return medias;
 }
 
-Player::stringMap MetaServer::listMusicServers(const Ice::Current& c)
+Player::MusicServerInfoSeq MetaServer::listMusicServers(const Ice::Current& c)
 {
-	std::map<std::string, std::string> musicServers;
+	Player::MusicServerInfoSeq musicServers;
+	musicServers.reserve(serverList.size());
+
 	for (const auto& it : serverList)
-		musicServers.emplace(it.second.first + ':' + it.second.second, it.first);
+		musicServers.push_back(it.second);
 
 	return musicServers;
 }
@@ -127,7 +133,9 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 		token = srv->setupStreaming(media.media.path, ipConInfo->remoteAddress, std::to_string(ipConInfo->remotePort));
 		token.endpointStr = media.endpointStr;
 		try {
-			token.streamingURL = "http://" + serverList.at(media.endpointStr).first + ":8090" + '/' + token.streamingURL; // prepend http://hostname:8090
+			const Player::MusicServerInfo musicSrv = serverList.at(media.endpointStr);
+			const std::string urlPort = musicSrv.hostname + ':' + std::to_string(musicSrv.streamingPort);
+			token.streamingURL = "http://" + urlPort + '/' + token.streamingURL; // prepend http://hostname:8090
 		}
 		catch (const std::exception& e) {
 			return Player::StreamToken();

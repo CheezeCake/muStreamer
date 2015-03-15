@@ -18,9 +18,17 @@ module Player
 		Song media;
 	};
 
+	struct MusicServerInfo
+	{
+		string endpointStr;
+		string hostname;
+		short listeningPort;
+		short streamingPort;
+	};
+
 	sequence<MediaInfo> MediaInfoSeq;
 	sequence<Song> SongSeq;
-	dictionary<string, string> stringMap;
+	sequence<MusicServerInfo> MusicServerInfoSeq;
 
 	struct StreamToken
 	{
@@ -49,7 +57,7 @@ module Player
 		MediaInfoSeq findByArtist(string s);
 		MediaInfoSeq findByTitle(string s);
 		MediaInfoSeq listSongs();
-		stringMap listMusicServers();
+		MusicServerInfoSeq listMusicServers();
 
 		StreamToken setupStreaming(MediaInfo media);
 		void play(StreamToken token);
