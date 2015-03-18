@@ -30,7 +30,6 @@ class MusicServer : public Player::IMusicServer
 		std::string streamingPort;
 		std::map<std::string, Player::Song> db;
 		libvlc_instance_t* vlc;
-
 };
 
 
