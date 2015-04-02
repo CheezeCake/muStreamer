@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 			setPort(streamPort, optarg);
 		}
 		else {
-			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-d streamingPort]\n";
+			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort]\n";
 			return 1;
 		}
 	}
