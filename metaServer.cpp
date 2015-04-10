@@ -18,24 +18,22 @@ class MetaServer : public Player::IMetaServer
 		virtual Player::MusicServerInfoSeq listMusicServers(const Ice::Current& c) override;
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
-		virtual void play(const Player::StreamToken& token, const Ice::Current& c) override;
-		virtual void stop(const Player::StreamToken& token, const Ice::Current& c) override;
 
 		void setCommunicator(const Ice::CommunicatorPtr ic) { this->ic = ic; }
 
 	private:
 		Ice::CommunicatorPtr ic = nullptr;
-
-		/* std::map<std::string, Player::IMusicServerPrx> serverList; */
-		/* std::map<std::string, std::pair<std::string, std::string>> serverList; */
 		std::map<std::string, Player::MusicServerInfo> serverList;
 };
 
 MetaServer::MetaServer()
 {
-	const std::string endpointStr("MusicServer:default -h onche.ovh -p 10001");
+	std::string endpointStr("MusicServer:default -h onche.ovh -p 10001");
 	Player::MusicServerInfo musicSrv = { endpointStr, "onche.ovh", 10001, 8090 };
+	serverList.insert(std::make_pair(endpointStr, musicSrv));
 
+	endpointStr = "MusicServer:default -h onche.ovh -p 10002";
+	musicSrv = { endpointStr, "onche.ovh", 10002, 8091 };
 	serverList.insert(std::make_pair(endpointStr, musicSrv));
 }
 
@@ -135,7 +133,7 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 		try {
 			const Player::MusicServerInfo musicSrv = serverList.at(media.endpointStr);
 			const std::string urlPort = musicSrv.hostname + ':' + std::to_string(musicSrv.streamingPort);
-			token.streamingURL = "http://" + urlPort + '/' + token.streamingURL; // prepend http://hostname:streamingPort
+			token.streamingURL = "http://" + urlPort + '/' + token.streamingURL; // http://hostname:streamingPort
 		}
 		catch (const std::exception& e) {
 			return Player::StreamToken();
@@ -143,26 +141,6 @@ Player::StreamToken MetaServer::setupStreaming(const Player::MediaInfo& media, c
 	}
 
 	return token;
-}
-
-void MetaServer::play(const Player::StreamToken& token, const Ice::Current& c)
-{
-	std::cout << "play\n";
-	Ice::ObjectPrx base = ic->stringToProxy(token.endpointStr);
-	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
-
-	if (srv)
-		srv->play(token);
-}
-
-void MetaServer::stop(const Player::StreamToken& token, const Ice::Current& c)
-{
-	std::cout << "stop\n";
-	Ice::ObjectPrx base = ic->stringToProxy(token.endpointStr);
-	Player::IMusicServerPrx srv = Player::IMusicServerPrx::checkedCast(base);
-
-	if (srv)
-		srv->stop(token);
 }
 
 int main(int argc, char **argv)
