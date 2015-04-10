@@ -1,5 +1,7 @@
 #include <iostream>
+#include <fstream>
 #include <regex>
+#include <cstdio>
 #include <ctime>
 #include <Ice/Ice.h>
 #include <vlc/libvlc.h>
@@ -25,6 +27,8 @@ class MusicServer : public Player::IMusicServer
 		virtual Player::StreamToken setupStreaming(const std::string& path, const std::string& ip, const std::string& port, const Ice::Current& c) override;
 		virtual void play(const Player::StreamToken& token, const Ice::Current& c) override;
 		virtual void stop(const Player::StreamToken& token, const Ice::Current& c) override;
+
+		virtual void uploadFile(const std::string& path, int offset, const Player::ByteSeq& data, const Ice::Current& c) override;
 
 	private:
 		std::string streamingPort;
@@ -138,6 +142,27 @@ void MusicServer::stop(const Player::StreamToken& token, const Ice::Current& c)
 {
 	std::cout << "Stop " << token.streamingURL << '\n';
 	libvlc_vlm_stop_media(vlc, token.libvlcMediaName.c_str());
+}
+
+void MusicServer::uploadFile(const std::string& path, int offset, const Player::ByteSeq& data, const Ice::Current& c)
+{
+	std::cout << "upload " << path << ", offset " << offset;
+	FILE* file = fopen(path.c_str(), "a+");
+	if (!file)
+		throw Player::Error("Cannot open file : " + path);
+
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+
+	std::cout << ", file size " << size << ", data size = " << data.size() << '\n';
+
+	if (offset < size)
+		throw new Player::Error("Write offset too small : " + path);
+	if (offset > size)
+		throw new Player::Error("Write offset too big : " + path);
+
+	fwrite(data.data(), sizeof(Player::ByteSeq::value_type), data.size(), file);
+	fclose(file);
 }
 
 void setPort(std::string& port, const char* arg)

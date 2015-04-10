@@ -26,6 +26,7 @@ module Player
 		short streamingPort;
 	};
 
+	sequence<byte> ByteSeq;
 	sequence<MediaInfo> MediaInfoSeq;
 	sequence<Song> SongSeq;
 	sequence<MusicServerInfo> MusicServerInfoSeq;
@@ -49,6 +50,8 @@ module Player
 		StreamToken setupStreaming(string path, string clientIP, string clientPort);
 		void play(StreamToken token);
 		void stop(StreamToken token);
+
+		void uploadFile(string path, int offset, ByteSeq data) throws Error;
 	};
 
 	interface IMetaServer
@@ -60,7 +63,5 @@ module Player
 		MusicServerInfoSeq listMusicServers();
 
 		StreamToken setupStreaming(MediaInfo media);
-		void play(StreamToken token);
-		void stop(StreamToken token);
 	};
 };
