@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <regex>
 #include <cstdio>
 #include <ctime>
 #include <Ice/Ice.h>
@@ -123,7 +122,7 @@ Player::StreamToken MusicServer::setupStreaming(const std::string& path, const s
 	Player::StreamToken token;
 	std::string::size_type pos = path.find_last_of("/");
 	std::string file(path, (pos == std::string::npos) ? 0 : pos);
-	std::string cleanClientIP = std::regex_replace(clientIP, std::regex(":"), "");
+	std::string cleanClientIP = clientIP.substr(clientIP.rfind(':') + 1);
 	std::string mediaName = cleanClientIP + '_' + clientPort + '_' + std::to_string(time(nullptr));
 
 	std::string sout = "#transcode{acodec=mp3,ab=128,channels=2,"
@@ -190,7 +189,6 @@ int main(int argc, char **argv)
 	std::string port("10001");
 	std::string streamPort("8090");
 	std::string hostname;
-	std::string hostnameOption;
 	int opt;
 
 	while ((opt = getopt(argc, argv, "p:s:h:")) != -1) {
@@ -202,7 +200,6 @@ int main(int argc, char **argv)
 		}
 		else if (opt == 'h') {
 			hostname = optarg;
-			hostnameOption = std::string(" -h ") + optarg;
 		}
 		else {
 			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort] [-h hostname]\n";
@@ -231,7 +228,7 @@ int main(int argc, char **argv)
 		Ice::ObjectPrx pub = topic->getPublisher()->ice_oneway();
 		Player::IMonitorPrx monitor = Player::IMonitorPrx::uncheckedCast(pub);
 
-		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port + hostnameOption);
+		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
 		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, monitor);
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();
