@@ -8,7 +8,7 @@ class MetaServer : public Player::IMetaServer
 	public:
 		enum FindBy { Artist, Title, Everything };
 
-		MetaServer();
+		MetaServer(Ice::CommunicatorPtr& iceCom);
 
 		virtual Player::MediaInfoSeq find(const std::string& s, const Ice::Current& c) override;
 		Player::MediaInfoSeq find(const std::string& s, const MetaServer::FindBy sb);
@@ -19,14 +19,12 @@ class MetaServer : public Player::IMetaServer
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
 
-		void setCommunicator(const Ice::CommunicatorPtr ic) { this->ic = ic; }
-
 	private:
-		Ice::CommunicatorPtr ic = nullptr;
+		Ice::CommunicatorPtr& ic;
 		std::map<std::string, Player::MusicServerInfo> serverList;
 };
 
-MetaServer::MetaServer()
+MetaServer::MetaServer(Ice::CommunicatorPtr& iceCom) : ic(iceCom)
 {
 	std::string endpointStr("MusicServer:default -h onche.ovh -p 10001");
 	Player::MusicServerInfo musicSrv = { endpointStr, "onche.ovh", 10001, 8090 };
@@ -171,8 +169,7 @@ int main(int argc, char **argv)
 	try {
 		ic = Ice::initialize(argc, argv);
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MetaServerAdapter", "default -p " + port);
-		MetaServer* srv = new MetaServer;
-		srv->setCommunicator(ic);
+		MetaServer* srv = new MetaServer(ic);
 		Ice::ObjectPtr object = srv;
 		adapter->add(object, ic->stringToIdentity("MetaServer"));
 		adapter->activate();
