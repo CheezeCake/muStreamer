@@ -59,7 +59,8 @@ void MusicServer::add(const Player::Song& s, const Ice::Current& c)
 void MusicServer::remove(const std::string& path, const Ice::Current& c)
 {
 	std::cout << "Removing: " << path << '\n';
-	db.erase(path);
+	if (db.erase(path) == 0)
+		throw Player::Error("Cannot remove song. Not present in the database : " + path);
 }
 
 Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
