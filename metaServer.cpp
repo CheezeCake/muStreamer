@@ -76,19 +76,19 @@ void MetaServer::addMusicServer(const Player::MusicServerInfo& server)
 		std::cout << server.endpointStr << " already in serverList\n";
 }
 
-Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& c)
+Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for: " << s << '\n';
 	return find(s, FindBy::Everything);
 }
 
-Player::MediaInfoSeq MetaServer::findByArtist(const std::string& s, const Ice::Current& c)
+Player::MediaInfoSeq MetaServer::findByArtist(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for artist: " << s << '\n';
 	return find(s, FindBy::Artist);
 }
 
-Player::MediaInfoSeq MetaServer::findByTitle(const std::string& s, const Ice::Current& c)
+Player::MediaInfoSeq MetaServer::findByTitle(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for title: " << s << '\n';
 	return find(s, FindBy::Title);
@@ -124,7 +124,7 @@ Player::MediaInfoSeq MetaServer::find(const std::string& s, const FindBy fb)
 	return medias;
 }
 
-Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
+Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current&)
 {
 	Player::MediaInfoSeq medias;
 
@@ -147,7 +147,7 @@ Player::MediaInfoSeq MetaServer::listSongs(const Ice::Current& c)
 	return medias;
 }
 
-Player::MusicServerInfoSeq MetaServer::listMusicServers(const Ice::Current& c)
+Player::MusicServerInfoSeq MetaServer::listMusicServers(const Ice::Current&)
 {
 	Player::MusicServerInfoSeq musicServers;
 	musicServers.reserve(serverList.size());

@@ -53,33 +53,33 @@ MusicServer::~MusicServer()
 	libvlc_vlm_release(vlc);
 }
 
-void MusicServer::add(const Player::Song& s, const Ice::Current& c)
+void MusicServer::add(const Player::Song& s, const Ice::Current&)
 {
 	std::cout << "Adding to db: " << s.artist << " - " << s.title << " - " << s.path << '\n';
 	if (!db.emplace(s.path, s).second)
 		throw Player::Error("Another song has the same path");
 }
 
-void MusicServer::remove(const std::string& path, const Ice::Current& c)
+void MusicServer::remove(const std::string& path, const Ice::Current&)
 {
 	std::cout << "Removing: " << path << '\n';
 	if (db.erase(path) == 0)
 		throw Player::Error("Cannot remove song. Not present in the database : " + path);
 }
 
-Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current& c)
+Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for: " << s << '\n';
 	return find(s, FindBy::Everything);
 }
 
-Player::SongSeq MusicServer::findByArtist(const std::string& s, const Ice::Current& c)
+Player::SongSeq MusicServer::findByArtist(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for artist: " << s << '\n';
 	return find(s, FindBy::Artist);
 }
 
-Player::SongSeq MusicServer::findByTitle(const std::string& s, const Ice::Current& c)
+Player::SongSeq MusicServer::findByTitle(const std::string& s, const Ice::Current&)
 {
 	std::cout << "Searching for title: " << s << '\n';
 	return find(s, FindBy::Title);
@@ -106,7 +106,7 @@ Player::SongSeq MusicServer::find(const std::string& s, const FindBy fb)
 	return songs;
 }
 
-Player::SongSeq MusicServer::listSongs(const Ice::Current& c)
+Player::SongSeq MusicServer::listSongs(const Ice::Current&)
 {
 	Player::SongSeq songs;
 	songs.reserve(db.size());
@@ -117,7 +117,7 @@ Player::SongSeq MusicServer::listSongs(const Ice::Current& c)
 	return songs;
 }
 
-Player::StreamToken MusicServer::setupStreaming(const std::string& path, const std::string& clientIP, const std::string& clientPort, const Ice::Current& c)
+Player::StreamToken MusicServer::setupStreaming(const std::string& path, const std::string& clientIP, const std::string& clientPort, const Ice::Current&)
 {
 	std::cout << "Setup stream " << path << '\n';
 	Player::StreamToken token;
@@ -137,19 +137,19 @@ Player::StreamToken MusicServer::setupStreaming(const std::string& path, const s
 	return token;
 }
 
-void MusicServer::play(const Player::StreamToken& token, const Ice::Current& c)
+void MusicServer::play(const Player::StreamToken& token, const Ice::Current&)
 {
 	std::cout << "Play " << token.streamingURL << '\n';
 	libvlc_vlm_play_media(vlc, token.libvlcMediaName.c_str());
 }
 
-void MusicServer::stop(const Player::StreamToken& token, const Ice::Current& c)
+void MusicServer::stop(const Player::StreamToken& token, const Ice::Current&)
 {
 	std::cout << "Stop " << token.streamingURL << '\n';
 	libvlc_vlm_stop_media(vlc, token.libvlcMediaName.c_str());
 }
 
-void MusicServer::uploadFile(const std::string& path, int offset, const Player::ByteSeq& data, const Ice::Current& c)
+void MusicServer::uploadFile(const std::string& path, int offset, const Player::ByteSeq& data, const Ice::Current&)
 {
 	std::cout << "upload " << path << ", offset " << offset;
 	FILE* file = fopen(path.c_str(), "a+");
