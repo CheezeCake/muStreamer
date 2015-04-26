@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <Ice/Ice.h>
+#include <IceStorm/IceStorm.h>
 #include <vlc/libvlc.h>
 #include <vlc/vlc.h>
 #include "server.h"
@@ -13,7 +14,7 @@ class MusicServer : public Player::IMusicServer
 	public:
 		enum FindBy { Artist, Title, Everything };
 
-		MusicServer(const std::string& port);
+		MusicServer(const std::string& hostname, const std::string& lPort, const std::string& sPort, Player::IMonitorPrx& m);
 		~MusicServer();
 
 		virtual void add(const Player::Song& s, const Ice::Current& c) override;
@@ -34,11 +35,14 @@ class MusicServer : public Player::IMusicServer
 		std::string streamingPort;
 		std::map<std::string, Player::Song> db;
 		libvlc_instance_t* vlc;
+		Player::IMonitorPrx& monitor;
 };
 
 
-MusicServer::MusicServer(const std::string& port) : streamingPort(port)
+MusicServer::MusicServer(const std::string& hostname, const std::string& lPort, const std::string& sPort, Player::IMonitorPrx& m) :
+	streamingPort(sPort), monitor(m)
 {
+	monitor->newMusicServer(hostname, lPort, sPort);
 	vlc = libvlc_new(0, nullptr);
 	if (!vlc)
 		throw std::runtime_error("Could not create libvlc instance");
@@ -185,25 +189,50 @@ int main(int argc, char **argv)
 	Ice::CommunicatorPtr ic;
 	std::string port("10001");
 	std::string streamPort("8090");
+	std::string hostname;
+	std::string hostnameOption;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "p:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "p:s:h:")) != -1) {
 		if (opt == 'p') {
 			setPort(port, optarg);
 		}
 		else if (opt == 's') {
 			setPort(streamPort, optarg);
 		}
+		else if (opt == 'h') {
+			hostname = optarg;
+			hostnameOption = std::string(" -h ") + optarg;
+		}
 		else {
-			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort]\n";
+			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort] [-h hostname]\n";
 			return 1;
 		}
 	}
 
 	try {
-		ic = Ice::initialize(argc, argv);
-		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
-		Ice::ObjectPtr object = new MusicServer(streamPort);
+		ic = Ice::initialize();
+
+		Ice::ObjectPrx obj = ic->stringToProxy("IceStorm/TopicManager:tcp -h onche.ovh -p 9999");
+		IceStorm::TopicManagerPrx topicManager = IceStorm::TopicManagerPrx::checkedCast(obj);
+		IceStorm::TopicPrx topic;
+		while (!topic) {
+			try {
+				topic = topicManager->retrieve("NewMusicServer");
+			} catch (const IceStorm::NoSuchTopic&) {
+				try {
+					topic = topicManager->create("NewMusicServer");
+				} catch (const IceStorm::TopicExists&) {
+					// Another client created the topic.
+				}
+			}
+		}
+
+		Ice::ObjectPrx pub = topic->getPublisher()->ice_oneway();
+		Player::IMonitorPrx monitor = Player::IMonitorPrx::uncheckedCast(pub);
+
+		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port + hostnameOption);
+		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, monitor);
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();
 		ic->waitForShutdown();

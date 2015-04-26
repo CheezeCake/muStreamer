@@ -2,7 +2,7 @@ CXX=clang++
 # CXX=g++
 CXXFLAGS=-std=c++11
 CPPFLAGS=-I.
-LDFLAGS=-lIce -lIceUtil -pthread -lvlc
+LDFLAGS=-lIce -lIceStorm -lIceUtil -pthread -lvlc
 CLASSPATH=.:/usr/share/java/Ice.jar
 JAVAC=javac
 JAVA=java

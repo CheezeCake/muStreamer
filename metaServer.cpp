@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <Ice/Ice.h>
+#include <IceStorm/IceStorm.h>
 #include "server.h"
 
 class MetaServer : public Player::IMetaServer
@@ -19,20 +20,60 @@ class MetaServer : public Player::IMetaServer
 
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
 
+		void addMusicServer(const Player::MusicServerInfo& server);
+
 	private:
 		Ice::CommunicatorPtr& ic;
 		std::map<std::string, Player::MusicServerInfo> serverList;
 };
 
-MetaServer::MetaServer(Ice::CommunicatorPtr& iceCom) : ic(iceCom)
+class Monitor : public Player::IMonitor
 {
-	std::string endpointStr("MusicServer:default -h onche.ovh -p 10001");
-	Player::MusicServerInfo musicSrv = { endpointStr, "onche.ovh", 10001, 8090 };
-	serverList.insert(std::make_pair(endpointStr, musicSrv));
+	public:
+		Monitor(MetaServer* ms);
+		void newMusicServer(const std::string& hostname, const std::string& listeningPort,
+				const std::string& streamingPort, const Ice::Current& c) override;
 
-	endpointStr = "MusicServer:default -h onche.ovh -p 10002";
-	musicSrv = { endpointStr, "onche.ovh", 10002, 8091 };
-	serverList.insert(std::make_pair(endpointStr, musicSrv));
+	private:
+		MetaServer* metaServer;
+};
+
+Monitor::Monitor(MetaServer* ms) : metaServer(ms)
+{}
+
+void Monitor::newMusicServer(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+{
+	std::string hostnameIp;
+	if (hostname.empty()) {
+		Ice::IPConnectionInfo* ipConInfo = dynamic_cast<Ice::IPConnectionInfo*>(c.con->getInfo().get());
+		hostnameIp = ipConInfo->remoteAddress.substr(ipConInfo->remoteAddress.rfind(':') + 1);
+	}
+	else {
+		hostnameIp = hostname;
+	}
+
+	std::string endpointStr("MusicServer:default -h " + hostnameIp + " -p " + listeningPort);
+	try {
+		Player::MusicServerInfo musicSrv = { endpointStr, hostnameIp,
+			static_cast<short>(std::stoul(listeningPort)),
+			static_cast<short>(std::stoul(streamingPort)) };
+
+		metaServer->addMusicServer(musicSrv);
+	}
+	catch (const std::exception&) {
+		std::cerr << "Error parsing port numbers of new music server\n";
+	}
+}
+
+MetaServer::MetaServer(Ice::CommunicatorPtr& iceCom) : ic(iceCom)
+{}
+
+void MetaServer::addMusicServer(const Player::MusicServerInfo& server)
+{
+	if (serverList.insert(std::make_pair(server.endpointStr, server)).second)
+		std::cout << "Adding server : " << server.endpointStr << '\n';
+	else
+		std::cout << server.endpointStr << " already in serverList\n";
 }
 
 Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current& c)
@@ -167,13 +208,29 @@ int main(int argc, char **argv)
 	}
 
 	try {
-		ic = Ice::initialize(argc, argv);
+		ic = Ice::initialize();
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MetaServerAdapter", "default -p " + port);
 		MetaServer* srv = new MetaServer(ic);
 		Ice::ObjectPtr object = srv;
 		adapter->add(object, ic->stringToIdentity("MetaServer"));
 		adapter->activate();
+
+		Ice::ObjectPrx obj = ic->stringToProxy("IceStorm/TopicManager:tcp -h onche.ovh -p 9999");
+		IceStorm::TopicManagerPrx topicManager = IceStorm::TopicManagerPrx::checkedCast(obj);
+		adapter = ic->createObjectAdapterWithEndpoints("MonitorAdapter", "tcp");
+		Player::IMonitorPtr monitor = new Monitor(srv);
+		Ice::ObjectPrx proxy = adapter->addWithUUID(monitor)->ice_oneway();
+		adapter->activate();
+
+		IceStorm::TopicPrx topic;
+		topic = topicManager->retrieve("NewMusicServer");
+		IceStorm::QoS qos;
+		qos["reliability"] = "ordered";
+		topic->subscribeAndGetPublisher(qos, proxy->ice_twoway());
+
 		ic->waitForShutdown();
+
+		topic->unsubscribe(proxy);
 	}
 	catch (const Ice::Exception& e) {
 		std::cerr << e << std::endl;

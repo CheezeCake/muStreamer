@@ -64,4 +64,9 @@ module Player
 
 		StreamToken setupStreaming(MediaInfo media);
 	};
+
+	interface IMonitor
+	{
+		void newMusicServer(string hostname, string listeningPort, string streamingPort);
+	};
 };
