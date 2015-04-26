@@ -148,17 +148,24 @@ int main(int argc, char **argv)
 	Ice::CommunicatorPtr ic;
 	int status = 0;
 	std::string port("10000");
+	int opt;
 
-	if (argc > 1) {
-		try {
-			std::stoul(argv[1]);
+	while ((opt = getopt(argc, argv, "p:")) != -1) {
+		if (opt == 'p') {
+			try {
+				std::stoul(optarg);
+			}
+			catch (const std::exception& e) {
+				std::cerr << "Invalid port number: " << optarg << '\n';
+				return 1;
+			}
+
+			port = optarg;
 		}
-		catch (const std::exception& e) {
-			std::cerr << "Invalid port number: " << argv[1] << '\n';
+		else {
+			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort]\n";
 			return 1;
 		}
-
-		port = argv[1];
 	}
 
 	try {
