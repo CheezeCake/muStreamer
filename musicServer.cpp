@@ -194,18 +194,19 @@ int main(int argc, char **argv)
 	signal(SIGINT, handler);
 
 	while ((opt = getopt(argc, argv, "p:s:h:")) != -1) {
-		if (opt == 'p') {
-			setPort(port, optarg);
-		}
-		else if (opt == 's') {
-			setPort(streamPort, optarg);
-		}
-		else if (opt == 'h') {
-			hostname = optarg;
-		}
-		else {
-			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort] [-h hostname]\n";
-			return 1;
+		switch (opt) {
+			case 'p':
+				setPort(port, optarg);
+				break;
+			case 's':
+				setPort(streamPort, optarg);
+				break;
+			case 'h':
+				hostname = optarg;
+				break;
+			default:
+				std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort] [-h hostname]\n";
+				return 1;
 		}
 	}
 
