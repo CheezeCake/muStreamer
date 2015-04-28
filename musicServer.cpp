@@ -1,7 +1,7 @@
 #include <iostream>
-#include <fstream>
 #include <cstdio>
 #include <ctime>
+#include <csignal>
 #include <Ice/Ice.h>
 #include <IceStorm/IceStorm.h>
 #include <vlc/libvlc.h>
@@ -31,17 +31,19 @@ class MusicServer : public Player::IMusicServer
 		virtual void uploadFile(const std::string& path, int offset, const Player::ByteSeq& data, const Ice::Current& c) override;
 
 	private:
-		std::string streamingPort;
 		std::map<std::string, Player::Song> db;
 		libvlc_instance_t* vlc;
 		Player::IMonitorPrx& monitor;
+		const std::string hostname;
+		const std::string listeningPort;
+		const std::string streamingPort;
 };
 
 
-MusicServer::MusicServer(const std::string& hostname, const std::string& lPort, const std::string& sPort, Player::IMonitorPrx& m) :
-	streamingPort(sPort), monitor(m)
+MusicServer::MusicServer(const std::string& hName, const std::string& lPort, const std::string& sPort, Player::IMonitorPrx& m) :
+	hostname(hName), listeningPort(lPort), streamingPort(sPort), monitor(m)
 {
-	monitor->newMusicServer(hostname, lPort, sPort);
+	monitor->newMusicServer(hName, lPort, sPort);
 	vlc = libvlc_new(0, nullptr);
 	if (!vlc)
 		throw std::runtime_error("Could not create libvlc instance");
@@ -50,6 +52,7 @@ MusicServer::MusicServer(const std::string& hostname, const std::string& lPort, 
 MusicServer::~MusicServer()
 {
 	libvlc_vlm_release(vlc);
+	monitor->musicServerDown(hostname, listeningPort, streamingPort);
 }
 
 void MusicServer::add(const Player::Song& s, const Ice::Current&)
@@ -182,14 +185,24 @@ void setPort(std::string& port, const char* arg)
 	port = arg;
 }
 
+Player::IMonitorPrx monitor;
+std::string port("10001");
+std::string streamPort("8090");
+std::string hostname;
+
+void handler(int)
+{
+	monitor->musicServerDown(hostname, port, streamPort);
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
 	int status = 0;
 	Ice::CommunicatorPtr ic;
-	std::string port("10001");
-	std::string streamPort("8090");
-	std::string hostname;
 	int opt;
+
+	signal(SIGINT, handler);
 
 	while ((opt = getopt(argc, argv, "p:s:h:")) != -1) {
 		if (opt == 'p') {
@@ -226,7 +239,7 @@ int main(int argc, char **argv)
 		}
 
 		Ice::ObjectPrx pub = topic->getPublisher()->ice_oneway();
-		Player::IMonitorPrx monitor = Player::IMonitorPrx::uncheckedCast(pub);
+		monitor = Player::IMonitorPrx::uncheckedCast(pub);
 
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
 		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, monitor);

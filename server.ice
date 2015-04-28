@@ -68,5 +68,6 @@ module Player
 	interface IMonitor
 	{
 		void newMusicServer(string hostname, string listeningPort, string streamingPort);
+		void musicServerDown(string hostname, string listeningPort, string streamingPort);
 	};
 };

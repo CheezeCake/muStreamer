@@ -21,6 +21,7 @@ class MetaServer : public Player::IMetaServer
 		virtual Player::StreamToken setupStreaming(const Player::MediaInfo& media, const Ice::Current& c) override;
 
 		void addMusicServer(const Player::MusicServerInfo& server);
+		void removeMusicServer(const Player::MusicServerInfo& server);
 
 	private:
 		Ice::CommunicatorPtr& ic;
@@ -33,6 +34,12 @@ class Monitor : public Player::IMonitor
 		Monitor(MetaServer* ms);
 		void newMusicServer(const std::string& hostname, const std::string& listeningPort,
 				const std::string& streamingPort, const Ice::Current& c) override;
+		void musicServerDown(const std::string& hostname, const std::string& listeningPort,
+				const std::string& streamingPort, const Ice::Current& c) override;
+
+		static Player::MusicServerInfo musicServerEndpointStr(const std::string& hostname,
+				const std::string& listeningPort, const std::string& streamingPort,
+				const Ice::Current& c);
 
 	private:
 		MetaServer* metaServer;
@@ -41,26 +48,45 @@ class Monitor : public Player::IMonitor
 Monitor::Monitor(MetaServer* ms) : metaServer(ms)
 {}
 
-void Monitor::newMusicServer(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+Player::MusicServerInfo Monitor::musicServerEndpointStr(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
 {
-	std::string hostnameIp;
+	std::string hostnameIP(hostname);
+
 	if (hostname.empty()) {
 		Ice::IPConnectionInfo* ipConInfo = dynamic_cast<Ice::IPConnectionInfo*>(c.con->getInfo().get());
-		hostnameIp = ipConInfo->remoteAddress.substr(ipConInfo->remoteAddress.rfind(':') + 1);
-	}
-	else {
-		hostnameIp = hostname;
+		hostnameIP = ipConInfo->remoteAddress.substr(ipConInfo->remoteAddress.rfind(':') + 1);
 	}
 
-	std::string endpointStr("MusicServer:default -h " + hostnameIp + " -p " + listeningPort);
+	std::string endpointStr("MusicServer:default -h " + hostnameIP + " -p " + listeningPort);
+	Player::MusicServerInfo musicSrv = { endpointStr, hostnameIP,
+		static_cast<short>(std::stoul(listeningPort)),
+		static_cast<short>(std::stoul(streamingPort)) };
+
+	return musicSrv;
+}
+
+void Monitor::newMusicServer(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+{
 	try {
-		Player::MusicServerInfo musicSrv = { endpointStr, hostnameIp,
-			static_cast<short>(std::stoul(listeningPort)),
-			static_cast<short>(std::stoul(streamingPort)) };
-
-		metaServer->addMusicServer(musicSrv);
+		metaServer->addMusicServer(musicServerEndpointStr(hostname, listeningPort, streamingPort, c));
 	}
-	catch (const std::exception&) {
+	catch (const std::invalid_argument&) {
+		std::cerr << "Error parsing port numbers of new music server\n";
+	}
+	catch (const std::out_of_range&) {
+		std::cerr << "Error parsing port numbers of new music server\n";
+	}
+}
+
+void Monitor::musicServerDown(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+{
+	try {
+		metaServer->removeMusicServer(musicServerEndpointStr(hostname, listeningPort, streamingPort, c));
+	}
+	catch (const std::invalid_argument&) {
+		std::cerr << "Error parsing port numbers of new music server\n";
+	}
+	catch (const std::out_of_range&) {
 		std::cerr << "Error parsing port numbers of new music server\n";
 	}
 }
@@ -74,6 +100,14 @@ void MetaServer::addMusicServer(const Player::MusicServerInfo& server)
 		std::cout << "Adding server : " << server.endpointStr << '\n';
 	else
 		std::cout << server.endpointStr << " already in serverList\n";
+}
+
+void MetaServer::removeMusicServer(const Player::MusicServerInfo& server)
+{
+	if (serverList.erase(server.endpointStr) == 1)
+		std::cout << server.endpointStr << " removed from serverList\n";
+	else
+		std::cerr << "Cannot remove " << server.endpointStr << " : not in serverList\n";
 }
 
 Player::MediaInfoSeq MetaServer::find(const std::string& s, const Ice::Current&)
