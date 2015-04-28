@@ -18,19 +18,22 @@ Client.class: Client.java
 
 
 # Servers
-metaServer: metaServer.o server.o
+metaServer: metaServer.o server.o monitor.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
-metaServer.o: metaServer.cpp
-	$(CXX) $(CXXFLAGS) -c $^ -o $@ $(CPPFLAGS)
+metaServer.o: metaServer.cpp metaServer.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
 
 musicServer: musicServer.o server.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
-musicServer.o: musicServer.cpp
-	$(CXX) $(CXXFLAGS) -c $^ -o $@ $(CPPFLAGS)
+musicServer.o: musicServer.cpp musicServer.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
 
 server.o: server.cpp server.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
+
+monitor.o: monitor.cpp monitor.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
 
 
