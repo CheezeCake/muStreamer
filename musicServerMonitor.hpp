@@ -4,10 +4,10 @@
 #include "server.h"
 #include "metaServer.hpp"
 
-class Monitor : public Player::IMonitor
+class MusicServerMonitor : public Player::IMusicServerMonitor
 {
 	public:
-		Monitor(MetaServer* ms);
+		MusicServerMonitor(MetaServer* ms);
 		void newMusicServer(const std::string& hostname, const std::string& listeningPort,
 				const std::string& streamingPort, const Ice::Current& c) override;
 		void musicServerDown(const std::string& hostname, const std::string& listeningPort,

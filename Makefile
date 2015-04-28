@@ -18,7 +18,7 @@ Client.class: Client.java
 
 
 # Servers
-metaServer: metaServer.o server.o monitor.o
+metaServer: metaServer.o server.o musicServerMonitor.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 metaServer.o: metaServer.cpp metaServer.hpp
@@ -33,7 +33,7 @@ musicServer.o: musicServer.cpp musicServer.hpp
 server.o: server.cpp server.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
 
-monitor.o: monitor.cpp monitor.hpp
+musicServerMonitor.o: musicServerMonitor.cpp musicServerMonitor.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(CPPFLAGS)
 
 

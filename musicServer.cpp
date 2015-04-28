@@ -5,10 +5,10 @@
 #include <IceStorm/IceStorm.h>
 #include "musicServer.hpp"
 
-MusicServer::MusicServer(const std::string& hName, const std::string& lPort, const std::string& sPort, Player::IMonitorPrx& m) :
-	hostname(hName), listeningPort(lPort), streamingPort(sPort), monitor(m)
+MusicServer::MusicServer(const std::string& hName, const std::string& lPort, const std::string& sPort, Player::IMusicServerMonitorPrx& m) :
+	hostname(hName), listeningPort(lPort), streamingPort(sPort), MSmonitor(m)
 {
-	monitor->newMusicServer(hName, lPort, sPort);
+	MSmonitor->newMusicServer(hName, lPort, sPort);
 	vlc = libvlc_new(0, nullptr);
 	if (!vlc)
 		throw std::runtime_error("Could not create libvlc instance");
@@ -17,7 +17,7 @@ MusicServer::MusicServer(const std::string& hName, const std::string& lPort, con
 MusicServer::~MusicServer()
 {
 	libvlc_vlm_release(vlc);
-	monitor->musicServerDown(hostname, listeningPort, streamingPort);
+	MSmonitor->musicServerDown(hostname, listeningPort, streamingPort);
 }
 
 void MusicServer::add(const Player::Song& s, const Ice::Current&)
@@ -150,14 +150,14 @@ void setPort(std::string& port, const char* arg)
 	port = arg;
 }
 
-Player::IMonitorPrx monitor;
+Player::IMusicServerMonitorPrx MSmonitor;
 std::string port("10001");
 std::string streamPort("8090");
 std::string hostname;
 
 void handler(int)
 {
-	monitor->musicServerDown(hostname, port, streamPort);
+	MSmonitor->musicServerDown(hostname, port, streamPort);
 	exit(0);
 }
 
@@ -204,10 +204,10 @@ int main(int argc, char **argv)
 		}
 
 		Ice::ObjectPrx pub = topic->getPublisher()->ice_oneway();
-		monitor = Player::IMonitorPrx::uncheckedCast(pub);
+		MSmonitor = Player::IMusicServerMonitorPrx::uncheckedCast(pub);
 
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
-		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, monitor);
+		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, MSmonitor);
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();
 		ic->waitForShutdown();

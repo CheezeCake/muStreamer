@@ -1,10 +1,10 @@
 #include <iostream>
-#include "monitor.hpp"
+#include "musicServerMonitor.hpp"
 
-Monitor::Monitor(MetaServer* ms) : metaServer(ms)
+MusicServerMonitor::MusicServerMonitor(MetaServer* ms) : metaServer(ms)
 {}
 
-Player::MusicServerInfo Monitor::musicServerEndpointStr(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+Player::MusicServerInfo MusicServerMonitor::musicServerEndpointStr(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
 {
 	std::string hostnameIP(hostname);
 
@@ -21,7 +21,7 @@ Player::MusicServerInfo Monitor::musicServerEndpointStr(const std::string& hostn
 	return musicSrv;
 }
 
-void Monitor::newMusicServer(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+void MusicServerMonitor::newMusicServer(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
 {
 	try {
 		metaServer->addMusicServer(musicServerEndpointStr(hostname, listeningPort, streamingPort, c));
@@ -34,7 +34,7 @@ void Monitor::newMusicServer(const std::string& hostname, const std::string& lis
 	}
 }
 
-void Monitor::musicServerDown(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
+void MusicServerMonitor::musicServerDown(const std::string& hostname, const std::string& listeningPort, const std::string& streamingPort, const Ice::Current& c)
 {
 	try {
 		metaServer->removeMusicServer(musicServerEndpointStr(hostname, listeningPort, streamingPort, c));
@@ -46,4 +46,3 @@ void Monitor::musicServerDown(const std::string& hostname, const std::string& li
 		std::cerr << "Error parsing port numbers of new music server\n";
 	}
 }
-

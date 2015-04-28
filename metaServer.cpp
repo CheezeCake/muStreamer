@@ -1,7 +1,7 @@
 #include <iostream>
 #include <IceStorm/IceStorm.h>
 #include "metaServer.hpp"
-#include "monitor.hpp"
+#include "musicServerMonitor.hpp"
 
 MetaServer::MetaServer(Ice::CommunicatorPtr& iceCom) : ic(iceCom)
 {}
@@ -163,8 +163,8 @@ int main(int argc, char **argv)
 
 		Ice::ObjectPrx obj = ic->stringToProxy("IceStorm/TopicManager:tcp -h onche.ovh -p 9999");
 		IceStorm::TopicManagerPrx topicManager = IceStorm::TopicManagerPrx::checkedCast(obj);
-		adapter = ic->createObjectAdapterWithEndpoints("MonitorAdapter", "tcp");
-		Player::IMonitorPtr monitor = new Monitor(srv);
+		adapter = ic->createObjectAdapterWithEndpoints("MusicServerMonitorAdapter", "tcp");
+		Player::IMusicServerMonitorPtr monitor = new MusicServerMonitor(srv);
 		Ice::ObjectPrx proxy = adapter->addWithUUID(monitor)->ice_oneway();
 		adapter->activate();
 
