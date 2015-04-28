@@ -18,11 +18,11 @@ MusicServer::MusicServer(Ice::CommunicatorPtr& ic, const std::string& hName, con
 	IceStorm::TopicPrx SEtopic;
 	while (!SEtopic) {
 		try {
-			SEtopic = topicManager->retrieve("MusicServerEvents");
+			SEtopic = topicManager->retrieve("SongEvents");
 		}
 		catch (const IceStorm::NoSuchTopic&) {
 			try {
-				SEtopic = topicManager->create("MusicServerEvents");
+				SEtopic = topicManager->create("SongEvents");
 			}
 			catch (const IceStorm::TopicExists&) {
 				// Another client created the topic.
