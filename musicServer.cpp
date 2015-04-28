@@ -5,13 +5,35 @@
 #include <IceStorm/IceStorm.h>
 #include "musicServer.hpp"
 
-MusicServer::MusicServer(const std::string& hName, const std::string& lPort, const std::string& sPort, Player::IMusicServerMonitorPrx& m) :
+MusicServer::MusicServer(Ice::CommunicatorPtr& ic, const std::string& hName, const std::string& lPort, const std::string& sPort, Player::IMusicServerMonitorPrx& m) :
 	hostname(hName), listeningPort(lPort), streamingPort(sPort), MSmonitor(m)
 {
-	MSmonitor->newMusicServer(hName, lPort, sPort);
 	vlc = libvlc_new(0, nullptr);
 	if (!vlc)
 		throw std::runtime_error("Could not create libvlc instance");
+
+	Ice::ObjectPrx obj = ic->stringToProxy("IceStorm/TopicManager:tcp -h onche.ovh -p 9999");
+	IceStorm::TopicManagerPrx topicManager = IceStorm::TopicManagerPrx::checkedCast(obj);
+
+	IceStorm::TopicPrx SEtopic;
+	while (!SEtopic) {
+		try {
+			SEtopic = topicManager->retrieve("MusicServerEvents");
+		}
+		catch (const IceStorm::NoSuchTopic&) {
+			try {
+				SEtopic = topicManager->create("MusicServerEvents");
+			}
+			catch (const IceStorm::TopicExists&) {
+				// Another client created the topic.
+			}
+		}
+	}
+
+	Ice::ObjectPrx pub = SEtopic->getPublisher()->ice_oneway();
+	Smonitor = Player::ISongMonitorPrx::uncheckedCast(pub);
+
+	MSmonitor->newMusicServer(hName, lPort, sPort);
 }
 
 MusicServer::~MusicServer()
@@ -25,6 +47,8 @@ void MusicServer::add(const Player::Song& s, const Ice::Current&)
 	std::cout << "Adding to db: " << s.artist << " - " << s.title << " - " << s.path << '\n';
 	if (!db.emplace(s.path, s).second)
 		throw Player::Error("Another song has the same path");
+
+	Smonitor->newSong(s);
 }
 
 void MusicServer::remove(const std::string& path, const Ice::Current&)
@@ -190,14 +214,15 @@ int main(int argc, char **argv)
 
 		Ice::ObjectPrx obj = ic->stringToProxy("IceStorm/TopicManager:tcp -h onche.ovh -p 9999");
 		IceStorm::TopicManagerPrx topicManager = IceStorm::TopicManagerPrx::checkedCast(obj);
-		IceStorm::TopicPrx topic;
-		while (!topic) {
+
+		IceStorm::TopicPrx MSEtopic;
+		while (!MSEtopic) {
 			try {
-				topic = topicManager->retrieve("MusicServerEvents");
+				MSEtopic = topicManager->retrieve("MusicServerEvents");
 			}
 			catch (const IceStorm::NoSuchTopic&) {
 				try {
-					topic = topicManager->create("MusicServerEvents");
+					MSEtopic = topicManager->create("MusicServerEvents");
 				}
 				catch (const IceStorm::TopicExists&) {
 					// Another client created the topic.
@@ -205,11 +230,11 @@ int main(int argc, char **argv)
 			}
 		}
 
-		Ice::ObjectPrx pub = topic->getPublisher()->ice_oneway();
+		Ice::ObjectPrx pub = MSEtopic->getPublisher()->ice_oneway();
 		MSmonitor = Player::IMusicServerMonitorPrx::uncheckedCast(pub);
 
 		Ice::ObjectAdapterPtr adapter = ic->createObjectAdapterWithEndpoints("MusicServerAdapter", "default -p " + port);
-		Ice::ObjectPtr object = new MusicServer(hostname, port, streamPort, MSmonitor);
+		Ice::ObjectPtr object = new MusicServer(ic, hostname, port, streamPort, MSmonitor);
 		adapter->add(object, ic->stringToIdentity("MusicServer"));
 		adapter->activate();
 		ic->waitForShutdown();

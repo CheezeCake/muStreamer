@@ -11,7 +11,9 @@ class MusicServer : public Player::IMusicServer
 	public:
 		enum FindBy { Artist, Title, Everything };
 
-		MusicServer(const std::string& hostname, const std::string& lPort, const std::string& sPort, Player::IMusicServerMonitorPrx& m);
+		MusicServer(Ice::CommunicatorPtr& ic, const std::string& hostname,
+				const std::string& lPort, const std::string& sPort,
+				Player::IMusicServerMonitorPrx& m);
 		~MusicServer();
 
 		virtual void add(const Player::Song& s, const Ice::Current& c) override;
@@ -32,6 +34,7 @@ class MusicServer : public Player::IMusicServer
 		std::map<std::string, Player::Song> db;
 		libvlc_instance_t* vlc;
 		Player::IMusicServerMonitorPrx& MSmonitor;
+		Player::ISongMonitorPrx Smonitor;
 		const std::string hostname;
 		const std::string listeningPort;
 		const std::string streamingPort;
