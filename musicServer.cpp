@@ -193,10 +193,10 @@ int main(int argc, char **argv)
 		IceStorm::TopicPrx topic;
 		while (!topic) {
 			try {
-				topic = topicManager->retrieve("NewMusicServer");
+				topic = topicManager->retrieve("MusicServerEvents");
 			} catch (const IceStorm::NoSuchTopic&) {
 				try {
-					topic = topicManager->create("NewMusicServer");
+					topic = topicManager->create("MusicServerEvents");
 				} catch (const IceStorm::TopicExists&) {
 					// Another client created the topic.
 				}

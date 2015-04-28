@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 		adapter->activate();
 
 		IceStorm::TopicPrx topic;
-		topic = topicManager->retrieve("NewMusicServer");
+		topic = topicManager->retrieve("MusicServerEvents");
 		IceStorm::QoS qos;
 		qos["reliability"] = "ordered";
 		topic->subscribeAndGetPublisher(qos, proxy->ice_twoway());
