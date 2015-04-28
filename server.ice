@@ -70,4 +70,9 @@ module Player
 		void newMusicServer(string hostname, string listeningPort, string streamingPort);
 		void musicServerDown(string hostname, string listeningPort, string streamingPort);
 	};
+
+	interface ISongMonitor
+	{
+		void newSong(Song s);
+	};
 };
