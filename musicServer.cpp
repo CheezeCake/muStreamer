@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <ctime>
 #include <csignal>
+#include <cerrno>
 #include <IceStorm/IceStorm.h>
 #include "musicServer.hpp"
 
@@ -56,6 +57,9 @@ void MusicServer::remove(const std::string& path, const Ice::Current&)
 	std::cout << "Removing: " << path << '\n';
 	if (db.erase(path) == 0)
 		throw Player::Error("Cannot remove song. Not present in the database : " + path);
+
+	if (::remove(path.c_str()) == -1)
+		perror(std::string("Cannot remove ").append(path).c_str());
 }
 
 Player::SongSeq MusicServer::find(const std::string& s, const Ice::Current&)
