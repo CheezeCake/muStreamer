@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 			port = optarg;
 		}
 		else {
-			std::cerr << "Usage: " << argv[0] << " [-p listeningPort] [-s streamingPort]\n";
+			std::cerr << "Usage: " << argv[0] << " [-p listeningPort]\n";
 			return 1;
 		}
 	}
